@@ -88,6 +88,15 @@ typedef struct vpx_image
     int      self_allocd;    /**< private */
 } vpx_image_t; /**< alias for struct vpx_image */
 
+%inline%{
+
+PyObject* vpx_img_get_data(vpx_image_t *img, int plane)
+{
+    return PyBuffer_FromReadWriteMemory(&img->planes[plane], img->d_w * img->d_h * img->bps / 8);
+}
+
+%}
+
 /**\brief Representation of a rectangle on a surface */
 typedef struct vpx_image_rect
 {

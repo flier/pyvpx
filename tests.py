@@ -3,6 +3,16 @@ import unittest
 
 __author__ = 'Flier Lu'
 
+class TestImage(unittest.TestCase):
+    def testAlloc(self):
+        img = Image(320, 200)
+
+        self.assertEquals(320, img.width)
+        self.assertEquals(200, img.height)
+        self.assertEquals(vpx.VPX_IMG_FMT_BGR24, img.format)
+        self.assertEquals(24, img.bps)
+        self.assertEquals(192000, len(img.data))
+
 class TestCodec(unittest.TestCase):
     def testVersion(self):
         major, minor, patch, version, extra, build_config = Codec.version()
