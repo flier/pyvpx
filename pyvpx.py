@@ -21,6 +21,12 @@ class Image(object):
         else:
             vpx.vpx_img_alloc(self.img, fmt, width, height, align)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.free()
+
     def flip(self):
         vpx.vpx_img_flip(self.img)
 
@@ -76,6 +82,12 @@ class Context(object):
     def __init__(self, iface):
         self.iface = iface
         self.codec = vpx.vpx_codec_ctx_t()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @property
     def err_msg(self):

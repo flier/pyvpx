@@ -32,20 +32,20 @@ class TestCodec(unittest.TestCase):
 
 class TestEncoder(unittest.TestCase):
     def testEncode(self):
-        img = Image(320, 240)
-        img.clear()
-        encoder = Encoder(320, 240)
+        with Encoder(320, 240) as encoder:
+            with Image(320, 240) as img:
+                img.clear()
 
-        frames = encoder.encode(img, 1)
+                frames = encoder.encode(img, 1)
 
-        self.assert_(frames)
+            self.assert_(frames)
 
-        kind, data = frames.next()
+            kind, data = frames.next()
 
-        self.assertEquals(vpx.VPX_CODEC_CX_FRAME_PKT, kind)
-        self.assert_(len(data) > 0)
+            self.assertEquals(vpx.VPX_CODEC_CX_FRAME_PKT, kind)
+            self.assert_(len(data) > 0)
 
-        self.assertRaises(StopIteration, frames.next)
+            self.assertRaises(StopIteration, frames.next)
 
 class TestDecode(unittest.TestCase):
     def testDecode(self):
