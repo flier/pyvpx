@@ -1,1 +1,27 @@
-PyVPX is a Python Binding of the WebM VP8 Codec, please check <https://github.com/flier/pyvpx> for more detail.
+PyVPX is a Python Binding of the WebM VP8 Codec, it supports encode or decode a sequence of video frames
+
+You could use a Encoder instance to encode a Image object, the image format should be vpx.VPX_IMG_FMT_I420 or vpx.VPX_IMG_FMT_YV12.
+
+    frame_count = 1
+
+    with Encoder(320, 240) as encoder:
+        with Image(320, 240) as img:
+            img.clear()
+
+            # fetch and fill the image data buffer
+
+            for kind, packet in encoder.encode(img, frame_count):
+                if kind == vpx.VPX_CODEC_CX_FRAME_PKT:
+                    print "sent a frame packet with %d bytes" % len(packet)
+
+            frame_count += 1
+
+You could use a Decoder instance to decode a sequence of packets for the video frames.
+
+    data = ... # fetch the packet (readable buffer object or string)
+
+    with Decoder() as decoder:
+        for img in decoder.decode(data):
+            print "received a %dx%d frame with %d bytes" % (img.width, img.height, len(img.data))
+
+please check the unit test or <https://github.com/flier/pyvpx> for more detail.
