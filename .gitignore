@@ -4,4 +4,5 @@ vpx.py
 vpx_wrap.c
 .idea/
 build/
+dist/
 pyvpx.egg-info/
