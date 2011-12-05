@@ -4,8 +4,7 @@ ez_setup.use_setuptools()
 
 import sys, os, os.path
 
-from distutils.core import Extension
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 __author__ = 'Flier Lu'
 
@@ -25,8 +24,25 @@ vpx = Extension(name = '_vpx',
 
 setup(name = 'pyvpx',
       version = '0.1',
-      packages = find_packages(),
+      description = 'Python Binding of WebM VP8 Codec',
+      long_description = open('README').read(),
       author = __author__,
       author_email = 'flier.lu@gmail.com',
-      description = 'Python Binding of WebM VP8 Codec',
-      license = '')
+      url = 'https://github.com/flier/pyvpx',
+      download_url = 'https://github.com/flier/pyvpx/downloads',
+      packages = find_packages(),
+      ext_modules = [vpx],
+      py_modules = ['vpx', 'ez_setup'],
+      test_suite = "tests",
+      license = 'BSD',
+      keywords = 'VPX video codec encoder decoder',
+      classifiers = [
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: C',
+        'Programming Language :: Python',
+        'Topic :: Multimedia :: Video',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+      ],)

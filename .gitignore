@@ -1,2 +1,7 @@
 *.pyc
+*.pyd
+vpx.py
+vpx_wrap.c
 .idea/
+build/
+pyvpx.egg-info/
