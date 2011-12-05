@@ -13,13 +13,16 @@ class VpxError(Exception):
             raise VpxError(errno)
 
 class Image(object):
-    def __init__(self, width, height, fmt=vpx.VPX_IMG_FMT_I420, data=None, align=1):
-        self.img = vpx.vpx_image_t()
-
-        if data:
-            vpx.vpx_img_wrap(self.img, fmt, width, height, align, data)
+    def __init__(self, width=0, height=0, fmt=vpx.VPX_IMG_FMT_I420, data=None, align=1, img=None):
+        if img:
+            self.img = img
         else:
-            vpx.vpx_img_alloc(self.img, fmt, width, height, align)
+            self.img = vpx.vpx_image_t()
+
+            if data:
+                vpx.vpx_img_wrap(self.img, fmt, width, height, align, data)
+            else:
+                vpx.vpx_img_alloc(self.img, fmt, width, height, align)
 
     def __enter__(self):
         return self
@@ -41,12 +44,20 @@ class Image(object):
         return self.img.fmt
 
     @property
-    def width(self):
+    def stored_width(self):
         return self.img.w
 
     @property
-    def height(self):
+    def stored_height(self):
         return self.img.h
+
+    @property
+    def width(self):
+        return self.img.d_w
+
+    @property
+    def height(self):
+        return self.img.d_h
 
     @property
     def bps(self):
@@ -100,7 +111,7 @@ class Context(object):
     def close(self):
         VpxError.check(vpx.vpx_codec_destroy(self.codec))
 
-class Frames(object):
+class Packets(object):
     def __init__(self, codec):
         self.codec = codec
         self.iter = vpx.vpx_codec_iter_alloc()
@@ -155,5 +166,53 @@ class Encoder(Context):
     def encode(self, img, pts, duration=1, flags=0, deadline=vpx.VPX_DL_REALTIME):
         VpxError.check(vpx.vpx_codec_encode(self.codec, img.img, pts, duration, flags, deadline));
 
+        return Packets(self.codec)
+
+class Frames(object):
+    def __init__(self, codec):
+        self.codec = codec
+        self.iter = vpx.vpx_codec_iter_alloc()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        img = vpx.vpx_codec_get_frame(self.codec, self.iter)
+
+        if img is None:
+            raise StopIteration()
+
+        return Image(img=img)
+
+class Decoder(Context):
+    Interface = Codec(vpx.vpx_codec_vp8_dx())
+
+    def __init__(self, flags=0):
+        Context.__init__(self, vpx.vpx_codec_vp8_dx())
+
+        VpxError.check(vpx.vpx_codec_dec_init_ver(self.codec, self.iface, None, flags, vpx.VPX_DECODER_ABI_VERSION))
+
+    def decode(self, data, deadline=0):
+        VpxError.check(vpx.vpx_codec_decode(self.codec, data, None, deadline))
+
         return Frames(self.codec)
+
+    def get_stream_info(self):
+        info = vpx.vpx_codec_stream_info_alloc()
+
+        VpxError.check(vpx.vpx_codec_get_stream_info(self.codec, info))
+
+        return info
+
+    @staticmethod
+    def peek_stream_info(data):
+        info = vpx.vpx_codec_stream_info_alloc()
+
+        VpxError.check(vpx.vpx_codec_peek_stream_info(vpx.vpx_codec_vp8_dx(), data, info))
+
+        return info
+
+
+
+        
     
