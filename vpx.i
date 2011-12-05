@@ -1,5 +1,7 @@
 %module(docstring="Python Binding of WebM VP8 Codec") vpx
 
+%include "cpointer.i"
+
 /**
  * Describes the vpx image descriptor and associated operations
  */
@@ -90,9 +92,20 @@ typedef struct vpx_image
 
 %inline%{
 
-PyObject* vpx_img_get_data(vpx_image_t *img, int plane)
+int vpx_img_get_size(vpx_image_t *img)
 {
-    return PyBuffer_FromReadWriteMemory(&img->planes[plane], img->d_w * img->d_h * img->bps / 8);
+    int s = (img->fmt & VPX_IMG_FMT_PLANAR) ? img->w : img->bps * img->w / 8;
+    return (img->fmt & VPX_IMG_FMT_PLANAR) ? img->h * img->w * img->bps / 8 : img->h * s;
+}
+
+PyObject* vpx_img_get_data(vpx_image_t *img)
+{
+    return PyBuffer_FromReadWriteMemory(img->planes[0], vpx_img_get_size(img));
+}
+
+void vpx_img_clear(vpx_image_t *img)
+{
+    memset(img->planes[0], 0, vpx_img_get_size(img));
 }
 
 %}
@@ -336,6 +349,47 @@ typedef       struct vpx_codec_priv  vpx_codec_priv_t;
  */
 typedef const void *vpx_codec_iter_t;
 
+%inline%{
+
+PyObject *vpx_codec_iter_alloc()
+{
+    PyObject *obj = PyBuffer_New(sizeof(vpx_codec_iter_t));
+
+    void *buf = NULL;
+    Py_ssize_t len = 0;
+
+    if (-1 == PyObject_AsWriteBuffer(obj, &buf, &len) || len < 4)
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a 4 bytes writable buffer");
+        return NULL;
+    }
+
+    memset(buf, 0, len);
+
+    return obj;
+}
+
+%}
+
+%typemap(in)  vpx_codec_iter_t*
+{
+    void *buf = NULL;
+    Py_ssize_t len = 0;
+
+    if (!PyBuffer_Check($input))
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a buffer object");
+        return NULL;
+    }
+
+    if (-1 == PyObject_AsWriteBuffer($input, &buf, &len) || len < 4)
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a 4 bytes writable buffer");
+        return NULL;
+    }
+
+    $1 = (vpx_codec_iter_t *) buf;
+}
 
 /*!\brief Codec context structure
  *
@@ -945,6 +999,11 @@ typedef struct vpx_fixed_buf
  */
 typedef int64_t vpx_codec_pts_t;
 
+%typemap(in) vpx_codec_pts_t
+{
+    $1 = PyLong_AsLongLong($input);
+}
+
 /*!\brief Compressed Frame Flags
  *
  * This type represents a bitfield containing information about a compressed
@@ -1032,6 +1091,14 @@ typedef struct vpx_codec_cx_pkt
     } data; /**< packet data */
 } vpx_codec_cx_pkt_t; /**< alias for struct vpx_codec_cx_pkt */
 
+%inline%{
+
+PyObject* vpx_pkt_get_data(vpx_codec_cx_pkt_t *pkt)
+{
+    return PyBuffer_FromReadWriteMemory(pkt->data.frame.buf, pkt->data.frame.sz);
+}
+
+%}
 
 /*!\brief Rational Number
  *

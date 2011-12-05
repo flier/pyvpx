@@ -9,9 +9,9 @@ class TestImage(unittest.TestCase):
 
         self.assertEquals(320, img.width)
         self.assertEquals(200, img.height)
-        self.assertEquals(vpx.VPX_IMG_FMT_BGR24, img.format)
-        self.assertEquals(24, img.bps)
-        self.assertEquals(192000, len(img.data))
+        self.assertEquals(vpx.VPX_IMG_FMT_I420, img.format)
+        self.assertEquals(12, img.bps)
+        self.assertEquals(96000, len(img.data))
 
 class TestCodec(unittest.TestCase):
     def testVersion(self):
@@ -32,7 +32,20 @@ class TestCodec(unittest.TestCase):
 
 class TestEncoder(unittest.TestCase):
     def testEncode(self):
-        pass
+        img = Image(320, 240)
+        img.clear()
+        encoder = Encoder(320, 240)
+
+        frames = encoder.encode(img, 1)
+
+        self.assert_(frames)
+
+        kind, data = frames.next()
+
+        self.assertEquals(vpx.VPX_CODEC_CX_FRAME_PKT, kind)
+        self.assert_(len(data) > 0)
+
+        self.assertRaises(StopIteration, frames.next)
 
 class TestDecode(unittest.TestCase):
     def testDecode(self):

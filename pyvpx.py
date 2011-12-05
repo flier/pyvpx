@@ -13,7 +13,7 @@ class VpxError(Exception):
             raise VpxError(errno)
 
 class Image(object):
-    def __init__(self, width, height, fmt=vpx.VPX_IMG_FMT_BGR24, data=None, align=1):
+    def __init__(self, width, height, fmt=vpx.VPX_IMG_FMT_I420, data=None, align=1):
         self.img = vpx.vpx_image_t()
 
         if data:
@@ -23,6 +23,9 @@ class Image(object):
 
     def flip(self):
         vpx.vpx_img_flip(self.img)
+
+    def clear(self):
+        vpx.vpx_img_clear(self.img)
 
     def free(self):
         vpx.vpx_img_free(self.img)
@@ -45,7 +48,7 @@ class Image(object):
 
     @property
     def data(self):
-        return vpx.vpx_img_get_data(self.img, 0)
+        return vpx.vpx_img_get_data(self.img)
     
 class Codec(object):
     def __init__(self, iface):
@@ -85,6 +88,22 @@ class Context(object):
     def close(self):
         VpxError.check(vpx.vpx_codec_destroy(self.codec))
 
+class Frames(object):
+    def __init__(self, codec):
+        self.codec = codec
+        self.iter = vpx.vpx_codec_iter_alloc()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        packet = vpx.vpx_codec_get_cx_data(self.codec, self.iter)
+
+        if packet is None:
+            raise StopIteration()
+
+        return packet.kind, vpx.vpx_pkt_get_data(packet)
+
 class Encoder(Context):
     Interface = Codec(vpx.vpx_codec_vp8_cx())
 
@@ -99,7 +118,7 @@ class Encoder(Context):
         self.cfg.g_w = width
         self.cfg.g_h = height
 
-        VpxError.check(vpx.vpx_codec_enc_init(self.codec, self.iface, self.cfg, 0))
+        VpxError.check(vpx.vpx_codec_enc_init_ver(self.codec, self.iface, self.cfg, 0, vpx.VPX_ENCODER_ABI_VERSION))
 
     @property
     def width(self):
@@ -108,3 +127,21 @@ class Encoder(Context):
     @property
     def height(self):
         return self.cfg.g_h
+
+    @property
+    def config(self):
+        return self.cfg
+
+    @config.setter
+    def config(self, cfg):
+        self.cfg = cfg
+
+        VpxError.check(vpx.vpx_codec_enc_config_set(self.codec, self.cfg))
+
+        return self.cfg
+
+    def encode(self, img, pts, duration=1, flags=0, deadline=vpx.VPX_DL_REALTIME):
+        VpxError.check(vpx.vpx_codec_encode(self.codec, img.img, pts, duration, flags, deadline));
+
+        return Frames(self.codec)
+    
