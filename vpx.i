@@ -2060,7 +2060,6 @@ vpx_codec_err_t vpx_codec_register_put_frame_cb(vpx_codec_ctx_t             *ctx
                                                 vpx_codec_put_frame_cb_fn_t  cb,
                                                 void                        *user_priv);
 
-
 /*!@} - end defgroup cap_put_frame */
 
 /*!\defgroup cap_put_slice Slice-Based Decoding Functions
@@ -2103,6 +2102,55 @@ vpx_codec_err_t vpx_codec_register_put_slice_cb(vpx_codec_ctx_t             *ctx
                                                 vpx_codec_put_slice_cb_fn_t  cb,
                                                 void                        *user_priv);
 
+%inline%{
+
+void vpx_codec_put_frame_callback(void *user_priv, const vpx_image_t *img)
+{
+    PyObject *image = SWIG_NewPointerObj(SWIG_as_voidptr(img), SWIGTYPE_p_vpx_image, 0);
+    PyObject *args = PyTuple_Pack(1, image);
+
+    PyObject_Call((PyObject *) user_priv, args, NULL);
+}
+
+vpx_codec_err_t vpx_codec_register_frame_callback(vpx_codec_ctx_t *ctx, PyObject *callback)
+{
+    if (!PyCallable_Check(callback))
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a function/method or a callable object");
+        return VPX_CODEC_INVALID_PARAM;
+    }
+
+    Py_INCREF(callback);
+
+    return vpx_codec_register_put_frame_cb(ctx, vpx_codec_put_frame_callback, callback);
+}
+
+void vpx_codec_put_slice_callback(void *user_priv, const vpx_image_t *img,
+                                  const vpx_image_rect_t *valid, const vpx_image_rect_t *update)
+{
+    PyObject *image = SWIG_NewPointerObj(SWIG_as_voidptr(img), SWIGTYPE_p_vpx_image, 0);
+    PyObject *valid_rect = SWIG_NewPointerObj(SWIG_as_voidptr(valid), SWIGTYPE_p_vpx_image_rect, 0),
+             *update_rect = SWIG_NewPointerObj(SWIG_as_voidptr(valid), SWIGTYPE_p_vpx_image_rect, 0);
+
+    PyObject *args = PyTuple_Pack(3, image, valid, update);
+
+    PyObject_Call((PyObject *) user_priv, args, NULL);
+}
+
+vpx_codec_err_t vpx_codec_register_slice_callback(vpx_codec_ctx_t *ctx, PyObject *callback)
+{
+    if (!PyCallable_Check(callback))
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a function/method or a callable object");
+        return VPX_CODEC_INVALID_PARAM;
+    }
+
+    Py_INCREF(callback);
+
+    return vpx_codec_register_put_slice_cb(ctx, vpx_codec_put_slice_callback, callback);
+}
+
+%}
 
 /*!@} - end defgroup cap_put_slice*/
 

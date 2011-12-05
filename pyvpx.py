@@ -197,6 +197,14 @@ class Decoder(Context):
 
         return Frames(self.codec)
 
+    def register_frame_callback(self, callback):
+        "void callback(const vpx_image_t *img)"
+        VpxError.check(vpx.vpx_codec_register_frame_callback(self.codec, callback))
+
+    def register_slice_callback(self, callback):
+        "void callback(const vpx_image_t *img, const vpx_image_rect_t *valid, const vpx_image_rect_t *update)"
+        VpxError.check(vpx.vpx_codec_register_slice_callback(self.codec, callback))
+
     def get_stream_info(self):
         info = vpx.vpx_codec_stream_info_alloc()
 

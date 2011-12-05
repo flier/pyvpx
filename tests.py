@@ -89,5 +89,24 @@ class TestDecode(unittest.TestCase):
                 self.assertEquals(240, info.h)
                 self.assertEquals(1, info.is_kf)
 
+                frame_called = False
+                slice_called = False
+
+                if decoder.Interface.caps & vpx.VPX_CODEC_CAP_PUT_FRAME:
+                    def on_frame(img):
+                        frame_called = True
+
+                    decoder.register_frame_callback(on_frame)
+
+                    def on_slice(img, valid, update):
+                        slice_called = True
+
+                    decoder.register_slice_callback(on_slice)
+
+                    decoder.decode(data)
+
+                    self.assert_(frame_called)
+                    self.assert_(slice_called)
+
 if __name__ == '__main__':
     unittest.main()
