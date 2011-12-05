@@ -39,7 +39,7 @@ class TestEncoder(unittest.TestCase):
             with Image(320, 240) as img:
                 img.clear()
 
-                packets = encoder.encode(img, 1)
+                packets = encoder.encode(img, 1, flags=vpx.VPX_EFLAG_FORCE_KF)
 
             self.assert_(packets)
 
@@ -79,6 +79,7 @@ class TestDecode(unittest.TestCase):
                 self.assertEquals(240, img.height)
                 self.assertEquals(384, img.stored_width)
                 self.assertEquals(304, img.stored_height)
+                self.assertEquals(vpx.VPX_IMG_FMT_I420, img.format)
 
                 self.assertRaises(StopIteration, frames.next)
 

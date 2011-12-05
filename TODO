@@ -1,0 +1,6 @@
+* Two Pass Encoder
+* Postprocessing Decoder
+* VP8 Set Reference Frame
+* VP8 Scalable Frame Patterns
+* VP8 Set Active and ROI Maps
+* Error Resiliency Features
