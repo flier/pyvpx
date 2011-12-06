@@ -21,6 +21,9 @@ class Image(object):
 
             if data:
                 vpx.vpx_img_wrap(self.img, fmt, width, height, align, data)
+
+                if vpx.vpx_img_get_size(self.img) > len(data):
+                    raise ValueError("the data buffer is too small")
             else:
                 vpx.vpx_img_alloc(self.img, fmt, width, height, align)
 
@@ -38,6 +41,17 @@ class Image(object):
 
     def free(self):
         vpx.vpx_img_free(self.img)
+
+    def copyto(self, buf):
+        return vpx.vpx_img_copy_to(self.img, buf)
+
+    def convertTo(self, dst_or_fmt):
+        if type(dst_or_fmt) != Image:
+            dst_or_fmt = Image(self.width, self.height, dst_or_fmt)
+
+        vpx.vpx_img_convert_to(self.img, dst_or_fmt.img)
+
+        return dst_or_fmt
 
     @property
     def format(self):
@@ -219,7 +233,6 @@ class Decoder(Context):
         VpxError.check(vpx.vpx_codec_peek_stream_info(vpx.vpx_codec_vp8_dx(), data, info))
 
         return info
-
 
 
         

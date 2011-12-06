@@ -13,6 +13,22 @@ class TestImage(unittest.TestCase):
         self.assertEquals(12, img.bps)
         self.assertEquals(96000, len(img.data))
 
+    def testConvert(self):
+        src = Image(320, 200, vpx.VPX_IMG_FMT_I420)
+        src.clear()
+
+        img = src.convertTo(vpx.VPX_IMG_FMT_RGB24)
+
+        self.assert_(img)
+        self.assertEquals(vpx.VPX_IMG_FMT_RGB24, img.format)
+        self.assertEquals(320, img.width)
+        self.assertEquals(200, img.height)
+
+        img = img.convertTo(vpx.VPX_IMG_FMT_I420)
+        self.assertEquals(vpx.VPX_IMG_FMT_I420, img.format)
+        self.assertEquals(320, img.width)
+        self.assertEquals(200, img.height)
+
 class TestCodec(unittest.TestCase):
     def testVersion(self):
         major, minor, patch, version, extra, build_config = Codec.version()

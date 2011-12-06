@@ -8,6 +8,7 @@ from setuptools import setup, find_packages, Extension
 
 __author__ = 'Flier Lu'
 
+is_debug = True
 is_win = os.name == 'nt' and sys.platform == 'win32'
 
 VPX_HOME = os.environ.get('VPX_HOME', None)
@@ -19,11 +20,25 @@ if VPX_HOME:
 else:
     vpx_inc_path = vpx_lib_path = vpx_lib = None
 
+if is_win:
+    macros = ['WIN32', '_WINDOWS']
+    
+    if is_debug:
+        macros += ['_DEBUG']
+        ccflags = ['/Od', '/Oy-', '/ZI']
+        ldflags = ['/DEBUG']
+    else:
+        macros += ['NDEBUG']
+        ccflags = ['/O2', '/Zi']
+        ldflags = ['/DEBUG']
+
 vpx = Extension(name = '_vpx',
                 sources = ['vpx.i'],
                 include_dirs = [vpx_inc_path],
                 library_dirs = [vpx_lib_path],
                 libraries = [vpx_lib],
+                extra_compile_args = ccflags,
+                extra_link_args = ldflags,
                 language = 'c++')
 
 setup(name = 'pyvpx',

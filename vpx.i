@@ -108,6 +108,126 @@ void vpx_img_clear(vpx_image_t *img)
     memset(img->planes[0], 0, vpx_img_get_size(img));
 }
 
+int vpx_img_copy_to(vpx_image_t *img, PyObject *obj)
+{
+    void *buf = NULL;
+    int len = 0, size = 0;
+
+    if (!PyBuffer_Check(obj) || -1 == PyObject_AsWriteBuffer(obj, &buf, &len))
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a writable buffer");
+        return 0;
+    }
+
+    size = vpx_img_get_size(img);
+
+    if (size > len)
+    {
+        PyErr_SetString(PyExc_ValueError,"the writable buffer is too small");
+        return 0;
+    }
+
+    printf("copying %d bytes from %p/%p/%p to %p", size, img->planes[0], img->planes[1], img->planes[2], buf);
+
+    memcpy(buf, img->planes[0], size);
+
+    return size;
+}
+
+////
+// YUV to RGB Conversion
+//
+// http://fourcc.org/fccyvrgb.php
+//
+void vpx_img_convert_to(vpx_image_t *src, vpx_image_t *dst)
+{
+    int row, col, y, u, v, r, g, b;
+    unsigned char *pY, *pU, *pV, *pRGB, *pU1, *pV1, *pU2, *pV2, *ubuf, *vbuf;
+
+    if (src->d_w != dst->d_w || src->d_h != dst->d_h)
+    {
+        PyErr_SetString(PyExc_ValueError,"the source and destination image should be same size");
+    }
+    else if (src->fmt == VPX_IMG_FMT_I420 && dst->fmt == VPX_IMG_FMT_RGB24)
+    {
+        pRGB = dst->planes[VPX_PLANE_PACKED];
+
+        for (row = 0; row < src->d_h; row++)
+        {
+            pY = src->planes[VPX_PLANE_Y] + row * src->stride[VPX_PLANE_Y];
+            pU = src->planes[VPX_PLANE_U] + (row >> src->y_chroma_shift) * src->stride[VPX_PLANE_U];
+            pV = src->planes[VPX_PLANE_V] + (row >> src->y_chroma_shift) * src->stride[VPX_PLANE_V];
+
+            for (col = 0; col < src->d_w; col++)
+            {
+                y = pY[col];
+                u = pU[col >> src->x_chroma_shift];
+                v = pV[col >> src->x_chroma_shift];
+
+                b = (((y-16)*1164               +(u-128)*2018)/1000);
+                g = (((y-16)*1164 -(v-128)* 813 -(u-128)* 391)/1000);
+                r = (((y-16)*1164 +(v-128)*1596              )/1000);
+
+                *pRGB++ = (unsigned char)b;
+                *pRGB++ = (unsigned char)g;
+                *pRGB++ = (unsigned char)r;
+            }
+        }
+    }
+    else if (src->fmt == VPX_IMG_FMT_RGB24 && dst->fmt == VPX_IMG_FMT_I420)
+    {
+        pU = ubuf = (unsigned char *) malloc(src->d_w*src->d_h);
+        pV = vbuf = (unsigned char *) malloc(src->d_w*src->d_h);
+
+        pRGB = src->planes[VPX_PLANE_PACKED];
+
+        for (row = 0; row < src->d_h; row++)
+        {
+            pY = dst->planes[VPX_PLANE_Y] + row * dst->stride[VPX_PLANE_Y];
+
+            for (col = 0; col < src->d_w; col++)
+            {
+                r = *pRGB++;
+                g = *pRGB++;
+                b = *pRGB++;
+
+			    *pY++ = (unsigned char)(( r*257 +g*504 +b* 98)/1000+16);
+			    *pV++ = (unsigned char)(( r*439 -g*368 -b* 71)/1000+128);
+			    *pU++ = (unsigned char)((-r*148 -g*291 +b*439)/1000+128);
+            }
+        }
+
+        for (row = 0; row < dst->d_h; row+=2)
+        {
+            pU = dst->planes[VPX_PLANE_U] + (row >> dst->y_chroma_shift) * dst->stride[VPX_PLANE_U];
+            pV = dst->planes[VPX_PLANE_V] + (row >> dst->y_chroma_shift) * dst->stride[VPX_PLANE_V];
+
+            pU1 = ubuf + dst->d_w * row;
+            pU2 = ubuf + dst->d_w * (row + 1);
+            pV1 = vbuf + dst->d_w * row;
+            pV2 = vbuf + dst->d_w * (row + 1);
+
+            for (col = 0; col < dst->d_w; col+=2)
+            {
+                *pU++ = (*pU1 + *(pU1+1) + *pU2 + *(pU2+1)) / 4;
+                *pV++ = (*pV1 + *(pV1+1) + *pV2 + *(pV2+1)) / 4;
+
+                pU1+=2;
+                pU2+=2;
+                pV1+=2;
+                pV2+=2;
+            }
+        }
+
+        free(ubuf);
+        free(vbuf);
+    }
+    else
+    {
+        PyErr_SetString(PyExc_ValueError,"unsupported format conversion");
+    }
+}
+
 %}
 
 /**\brief Representation of a rectangle on a surface */
@@ -162,14 +282,40 @@ vpx_image_t *vpx_img_alloc(vpx_image_t  *img,
  *         parameter is non-null, the value of the img parameter will be
  *         returned.
  */
+
+%typemap(in) unsigned char *img_data
+{
+    if (PyBuffer_Check($input))
+    {
+        void *buf = NULL;
+        int len = 0;
+
+        if (-1 == PyObject_AsReadBuffer($input, &buf, &len))
+        {
+            PyErr_SetString(PyExc_ValueError,"Expected a readable buffer");
+            return NULL;
+        }
+
+        $1 = (unsigned char *) buf;
+    }
+    else if (PyString_Check($input))
+    {
+        $1 = (unsigned char *) PyString_AsString($input);
+    }
+    else
+    {
+        PyErr_SetString(PyExc_ValueError,"Expected a string or readable buffer");
+        return NULL;
+    }
+}
+
 %feature("docstring", "Open a descriptor, using existing storage for the underlying image") vpx_img_wrap;
 vpx_image_t *vpx_img_wrap(vpx_image_t  *img,
                           vpx_img_fmt_t fmt,
                           unsigned int d_w,
                           unsigned int d_h,
                           unsigned int align,
-                          unsigned char      *img_data);
-
+                          unsigned char *img_data);
 
 /*!\brief Set the rectangle identifying the displayed portion of the image
  *
