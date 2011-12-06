@@ -168,9 +168,11 @@ void vpx_img_convert_to(vpx_image_t *src, vpx_image_t *dst)
                 g = (((y-16)*1164 -(v-128)* 813 -(u-128)* 391)/1000);
                 r = (((y-16)*1164 +(v-128)*1596              )/1000);
 
-                *pRGB++ = (unsigned char)b;
-                *pRGB++ = (unsigned char)g;
-                *pRGB++ = (unsigned char)r;
+                #define clamp(v) (unsigned char) min(max(16, v), 235)
+
+                *pRGB++ = clamp(b);
+                *pRGB++ = clamp(g);
+                *pRGB++ = clamp(r);
             }
         }
     }
