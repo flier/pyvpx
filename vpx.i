@@ -151,28 +151,37 @@ void vpx_img_convert_to(vpx_image_t *src, vpx_image_t *dst)
     else if (src->fmt == VPX_IMG_FMT_I420 && dst->fmt == VPX_IMG_FMT_RGB24)
     {
         pRGB = dst->planes[VPX_PLANE_PACKED];
+        pY = src->planes[VPX_PLANE_Y];
+        pU = src->planes[VPX_PLANE_U];
+        pV = src->planes[VPX_PLANE_V];
 
         for (row = 0; row < src->d_h; row++)
         {
-            pY = src->planes[VPX_PLANE_Y] + row * src->stride[VPX_PLANE_Y];
-            pU = src->planes[VPX_PLANE_U] + (row >> src->y_chroma_shift) * src->stride[VPX_PLANE_U];
-            pV = src->planes[VPX_PLANE_V] + (row >> src->y_chroma_shift) * src->stride[VPX_PLANE_V];
-
             for (col = 0; col < src->d_w; col++)
             {
                 y = pY[col];
                 u = pU[col >> src->x_chroma_shift];
                 v = pV[col >> src->x_chroma_shift];
 
-                b = (((y-16)*1164               +(u-128)*2018)/1000);
-                g = (((y-16)*1164 -(v-128)* 813 -(u-128)* 391)/1000);
-                r = (((y-16)*1164 +(v-128)*1596              )/1000);
+                y = (y-16)*1164;
+
+                b = ((y               +(u-128)*2018)/1000);
+                g = ((y -(v-128)* 813 -(u-128)* 391)/1000);
+                r = ((y +(v-128)*1596              )/1000);
 
                 #define clamp(v) (unsigned char) min(max(16, v), 235)
 
                 *pRGB++ = clamp(b);
                 *pRGB++ = clamp(g);
                 *pRGB++ = clamp(r);
+            }
+
+            pY += src->stride[VPX_PLANE_Y];
+
+            if (row & src->y_chroma_shift)
+            {
+                pU += src->stride[VPX_PLANE_U];
+                pV += src->stride[VPX_PLANE_V];
             }
         }
     }

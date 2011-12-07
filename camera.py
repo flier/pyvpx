@@ -53,8 +53,15 @@ if __name__ == '__main__':
                             imshow('Camera', frame)
 
                     # handle events
-                    if waitKey (5) & 255 == 27:
+                    key = waitKey (5) & 255
+                    if key == 27:
                         # user has press the ESC key, so exit
                         break
+                    elif key == ord('p'):
+                        print "take a preview"
+                        src.asPilImage().save("preview.png")
+                    elif key != 255:
+                        print "unknown shotkey - ", key
+                        
             except KeyboardInterrupt:
                 pass

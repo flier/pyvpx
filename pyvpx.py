@@ -47,11 +47,22 @@ class Image(object):
 
     def convertTo(self, dst_or_fmt):
         if type(dst_or_fmt) != Image:
+            if self.format == dst_or_fmt:
+                return self
+            
             dst_or_fmt = Image(self.width, self.height, dst_or_fmt)
 
         vpx.vpx_img_convert_to(self.img, dst_or_fmt.img)
 
         return dst_or_fmt
+
+    def asPilImage(self):
+        import Image
+
+        src = self.convertTo(vpx.VPX_IMG_FMT_RGB24)
+        img = Image.frombuffer('RGB', (src.width, src.height), src.data)
+
+        return img
 
     @property
     def format(self):
