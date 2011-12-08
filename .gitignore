@@ -6,3 +6,4 @@ vpx_wrap.c
 build/
 dist/
 pyvpx.egg-info/
+_vpx.so

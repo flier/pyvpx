@@ -75,8 +75,8 @@ class TestDecode(unittest.TestCase):
                 frames = encoder.encode(img, 1)
 
                 kind, data = frames.next()
-                
-            info = Decoder.peek_stream_info(data)
+
+                info = Decoder.peek_stream_info(data)
 
             self.assert_(info)
             self.assertEquals(320, info.w)
