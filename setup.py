@@ -42,7 +42,7 @@ vpx = Extension(name = '_vpx',
                 language = 'c++')
 
 setup(name = 'pyvpx',
-      version = '0.3',
+      version = '0.4',
       description = 'Python Binding of WebM VP8 Codec',
       long_description = open('README').read(),
       author = __author__,
