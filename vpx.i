@@ -18,7 +18,7 @@
  * types, removing or reassigning enums, adding/removing/rearranging
  * fields to structures
  */
-%constant int VPX_IMAGE_ABI_VERSION = (1); /**<\hideinitializer*/
+%constant int VPX_IMAGE_ABI_VERSION = VPX_IMAGE_ABI_VERSION; /**<\hideinitializer*/
 
 
 %constant int VPX_IMG_FMT_PLANAR     = 0x100;  /**< Image is a planar format */
@@ -133,6 +133,16 @@ int vpx_img_copy_to(vpx_image_t *img, PyObject *obj)
 
     return size;
 }
+
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+      _a > _b ? _a : _b; })
+
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+      _a < _b ? _a : _b; })
 
 ////
 // YUV to RGB Conversion
@@ -401,7 +411,7 @@ void vpx_img_free(vpx_image_t *img);
  * types, removing or reassigning enums, adding/removing/rearranging
  * fields to structures
  */
-%constant int VPX_CODEC_ABI_VERSION = (2 + VPX_IMAGE_ABI_VERSION); /**<\hideinitializer*/
+%constant int VPX_CODEC_ABI_VERSION = VPX_CODEC_ABI_VERSION; /**<\hideinitializer*/
 
 /*!\brief Algorithm return codes */
 typedef enum {
@@ -1109,7 +1119,7 @@ typedef enum
  * types, removing or reassigning enums, adding/removing/rearranging
  * fields to structures
  */
-%constant int VPX_ENCODER_ABI_VERSION = (2 + VPX_CODEC_ABI_VERSION);
+%constant int VPX_ENCODER_ABI_VERSION = VPX_ENCODER_ABI_VERSION;
 
 /*! \brief Encoder capabilities bitfield
  *
@@ -2059,8 +2069,8 @@ vpx_codec_err_t vpx_codec_dec_init_ver(vpx_codec_ctx_t      *ctx,
 {
     if (PyBuffer_Check($input))
     {
-        void *buf;
-        int len;
+        void *buf = NULL;
+        int i, len = 0;
 
         if (-1 == PyObject_AsReadBuffer($input, &buf, &len))
         {

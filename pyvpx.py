@@ -155,8 +155,7 @@ class Packets(object):
 class Encoder(Context):
     Interface = Codec(vpx.vpx_codec_vp8_cx())
 
-    def __init__(self, width, height, error_resilient=False, lag_in_frames=0,
-                 undershoot_pct=0, overshoot_pct=0):
+    def __init__(self, width, height):
         Context.__init__(self, vpx.vpx_codec_vp8_cx())
 
         self.cfg = vpx.vpx_codec_enc_cfg_t()
@@ -166,18 +165,6 @@ class Encoder(Context):
         self.cfg.rc_target_bitrate = width * height * self.cfg.rc_target_bitrate / self.cfg.g_w / self.cfg.g_h
         self.cfg.g_w = width
         self.cfg.g_h = height
-
-        if error_resilient:
-            self.cfg.g_error_resilient = 1
-
-        if lag_in_frames > 0:
-            self.cfg.g_lag_in_frames = lag_in_frames
-
-        if undershoot_pct > 0:
-            self.cfg.g_undershoot_pct = undershoot_pct
-
-        if overshoot_pct > 0:
-            self.cfg.g_overshoot_pct = overshoot_pct
 
         VpxError.check(vpx.vpx_codec_enc_init_ver(self.codec, self.iface, self.cfg, 0, vpx.VPX_ENCODER_ABI_VERSION))
 

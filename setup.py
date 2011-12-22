@@ -16,9 +16,15 @@ VPX_HOME = os.environ.get('VPX_HOME', None)
 if VPX_HOME:
     vpx_inc_path = os.path.join(VPX_HOME, 'include')
     vpx_lib_path = os.path.join(VPX_HOME, 'lib', 'Win32') if is_win else ''
-    vpx_lib = 'vpxmt' if is_win else 'vpx'
 else:
-    vpx_inc_path = vpx_lib_path = vpx_lib = None
+    vpx_inc_path = vpx_lib_path = None
+
+if is_win:
+    vpx_lib = 'vpxmt'
+elif is_debug:
+    vpx_lib = 'vpx_g'
+else:
+    vpx_lib = 'vpx'
 
 if is_win:
     macros = ['WIN32', '_WINDOWS']
@@ -31,12 +37,18 @@ if is_win:
         macros += ['NDEBUG']
         ccflags = ['/O2', '/Zi']
         ldflags = ['/DEBUG']
+else:
+    if is_debug:
+        ccflags = ['-g', '-O0', '-fPIC']
+    else:
+        ccflags = []
+    ldflags = []
 
 vpx = Extension(name = '_vpx',
                 sources = ['vpx.i'],
-                include_dirs = [vpx_inc_path],
-                library_dirs = [vpx_lib_path],
-                libraries = [vpx_lib],
+                include_dirs = [vpx_inc_path] if vpx_inc_path else [],
+                library_dirs = [vpx_lib_path] if vpx_lib_path else [],
+                libraries = [vpx_lib] if vpx_lib else [],
                 extra_compile_args = ccflags,
                 extra_link_args = ldflags,
                 language = 'c++')
